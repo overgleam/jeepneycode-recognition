@@ -1,6 +1,6 @@
 import math
 
-from ultralytics import YOLO, checks
+from ultralytics import YOLO
 import cv2
 from util import read_jeepcode
 
@@ -37,14 +37,50 @@ while True:
 
                 crop_jeepney_code = img[y1:y2, x1:x2, :]
                 crop_jeepney_code_gray = cv2.cvtColor(crop_jeepney_code, cv2.COLOR_BGR2GRAY)
-                _, crop_jeepney_code_thresh = cv2.threshold(crop_jeepney_code_gray, 64, 255, cv2.THRESH_BINARY)
-
-                jeepneycode_text, jeepneycode_score = read_jeepcode(crop_jeepney_code_thresh)
-                cv2.imshow('crop', crop_jeepney_code_thresh)
+                
+                jeepneycode_text, jeepneycode_score = read_jeepcode(crop_jeepney_code_gray)
+                cv2.imshow('crop', crop_jeepney_code_gray)
 
                 if jeepneycode_text is not None:
                     cv2.putText(img, jeepneycode_text, (300, 50), cv2.FONT_HERSHEY_PLAIN,
                                 3, (255, 255, 255), 3)
+                else :
+                    _, crop_jeepney_code_thresh = cv2.threshold(crop_jeepney_code_gray, 64, 255, cv2.THRESH_BINARY)
+                    jeepneycode_text, jeepneycode_score = read_jeepcode(crop_jeepney_code_thresh)
+
+                    if jeepneycode_text is not None:
+                        cv2.putText(img, jeepneycode_text, (300, 50), cv2.FONT_HERSHEY_PLAIN,
+                                    3, (255, 255, 255), 3)
+                    else:
+                        # Apply additional filters and OCR attempts if initial read is None
+                        # Filter 1: Adaptive Thresholding
+                        crop_jeepney_code_adaptive_thresh = cv2.adaptiveThreshold(crop_jeepney_code_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                                                                cv2.THRESH_BINARY, 11, 2)
+                        jeepneycode_text, jeepneycode_score = read_jeepcode(crop_jeepney_code_adaptive_thresh)
+                        cv2.imshow('Adaptive Threshold', crop_jeepney_code_adaptive_thresh)
+
+                        if jeepneycode_text is not None:
+                            cv2.putText(img, jeepneycode_text, (300, 100), cv2.FONT_HERSHEY_PLAIN,
+                                        3, (255, 0, 0), 3)
+                        else:
+                            # Filter 2: Morphological Transformations
+                            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+                            crop_jeepney_code_morph = cv2.morphologyEx(crop_jeepney_code_gray, cv2.MORPH_OPEN, kernel)
+                            jeepneycode_text, jeepneycode_score = read_jeepcode(crop_jeepney_code_morph)
+                            cv2.imshow('Morphological Transform', crop_jeepney_code_morph)
+
+                            if jeepneycode_text is not None:
+                                cv2.putText(img, jeepneycode_text, (300, 150), cv2.FONT_HERSHEY_PLAIN,
+                                            3, (0, 0, 255), 3)
+                            else:
+                                # Filter 3: Canny Edge Detection
+                                crop_jeepney_code_edges = cv2.Canny(crop_jeepney_code_gray, 100, 200)
+                                jeepneycode_text, jeepneycode_score = read_jeepcode(crop_jeepney_code_edges)
+                                cv2.imshow('Canny Edges', crop_jeepney_code_edges)
+
+                                if jeepneycode_text is not None:
+                                    cv2.putText(img, jeepneycode_text, (300, 200), cv2.FONT_HERSHEY_PLAIN,
+                                                3, (0, 255, 255), 3)
 
     cv2.imshow("main.py", img)
 

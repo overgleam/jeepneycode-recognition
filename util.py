@@ -1,6 +1,6 @@
 import string
 import easyocr
-
+import math
 # Initialize the OCR reader
 reader = easyocr.Reader(['en'])
 
@@ -74,7 +74,6 @@ def format_jeepcode(text):
 
 def read_jeepcode(jeepcode_crop):
     detections = reader.readtext(jeepcode_crop)
-    # print(detections)
     for detection in detections:
         bbox, text, score = detection
 
@@ -82,6 +81,7 @@ def read_jeepcode(jeepcode_crop):
         formatted_text = format_jeepcode(text)
         # Check if the formatted text complies with the jeep code format and is in the list of valid codes
         if jeepcode_complies_format(formatted_text) and formatted_text in jeepney_codes:
+            print(f"Jeepney Code: {formatted_text}", f"Percent: {math.ceil(score * 100) / 100}%")
             return formatted_text, score
 
     return None, None
